@@ -13,14 +13,14 @@ class Region(Base):
     centroid = Column(Geometry('Point', srid=4326)) #srid 4326 is the standard Gps coordinate system for longitude and latitude
     geometry = Column(Geometry('MULTIPOLYGON', srid=4326))
 
-    weather = relationship("weatherObservation", back_populates="region")
+    weather = relationship("WeatherObservation", back_populates="region")
     alerts = relationship("Alert", back_populates="region")
 
-class weatherObservation(Base):
+class WeatherObservation(Base):
     __tablename__="weather_observation"
 
     id = Column(Integer, primary_key=True, index=True)
-    region_id = Column(Integer, ForeignKey("region.id"))
+    region_id = Column(Integer, ForeignKey("regions.id"))
     source = Column(String(100))
     rainfall = Column(Float)
     temp = Column(Float)
@@ -32,7 +32,7 @@ class RiverLevel(Base):
     __tablename__ = "river_levels"
 
     id = Column(Integer, primary_key=True, index = True)
-    region_id = Column(Integer, ForeignKey("region.id"))
+    region_id = Column(Integer, ForeignKey("regions.id"))
     water_level = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
@@ -40,7 +40,7 @@ class RiskScore(Base):
     __tablename__ = "risk_scores"
 
     id = Column(Integer, primary_key=True, index=True)
-    region_id = Column(Integer, ForeignKey("region.id"))
+    region_id = Column(Integer, ForeignKey("regions.id"))
     flood_score = Column(Float)
     landslide_score = Column(Float)
     heatwave_score = Column(Float)
@@ -51,7 +51,7 @@ class Alert(Base):
     __tablename__="alerts"
 
     id = Column(Integer, primary_key=True, index=True)
-    region_id = Column(Integer, ForeignKey("region.id"))
+    region_id = Column(Integer, ForeignKey("regions.id"))
     risk_type = Column(String(50))
     score = Column(Float)
     message = Column(String)
