@@ -25,3 +25,13 @@ class WeatherResponse(WeatherBase):
     id: int
     timestamp: datetime
     model_config={"from_attributes": True}
+
+class RiskResponse(BaseModel):
+    region_id: int
+    flood_score: float
+    landslide_score: float
+    heatwave_score: float
+    earthquake_score: float
+    timestamp: datetime
+
+    model_config={"from_attributes": True}
