@@ -21,9 +21,9 @@ def health_check(db: Session = Depends(get_db)):
             "status": "system online",
             "database": f"connection failed:{str(e)}"
         }
-@app.get("/api/regions")
-def get_regions():
-    return{"message":"will return list of regions with geometry bounding boxes"}
+# @app.get("/api/regions")
+# def get_regions():
+#     return{"message":"will return list of regions with geometry bounding boxes"}
 @app.post("/api/regions", response_model=schemas.RegionResponse)
 def create_region(region: schemas.RegionCreate, db:Session = Depends(get_db)):
     # creating new region in the db
