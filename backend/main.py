@@ -44,3 +44,10 @@ def create_region(region: schemas.RegionCreate, db:Session = Depends(get_db)):
 def get_regions(db: Session = Depends(get_db)):
     regions = db.query(models.Region).all()
     return regions
+@app.post("/api/weather", response_model=schemas.WeatherResponse)
+def ingest_weather(weather: schemas.WeatherCreate, db: Session = Depends(get_db)):
+    db_weather = models.WeatherObservation(**weather.model_dump())
+    db.add(db_weather)
+    db.commit()
+    db.refresh(db_weather)
+    return db_weather

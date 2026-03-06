@@ -17,7 +17,7 @@ class Region(Base):
     alerts = relationship("Alert", back_populates="region")
 
 class WeatherObservation(Base):
-    __tablename__="weather_observation"
+    __tablename__="weather_observations"
 
     id = Column(Integer, primary_key=True, index=True)
     region_id = Column(Integer, ForeignKey("regions.id"))
