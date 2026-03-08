@@ -35,3 +35,13 @@ class RiskResponse(BaseModel):
     timestamp: datetime
 
     model_config={"from_attributes": True}
+class AlertResponse(BaseModel):
+    id: int
+    region_id: int
+    risk_type: str
+    score: float
+    message: str
+    created_at: datetime
+    sent: bool
+
+    model_config={"from_attributes": True}

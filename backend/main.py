@@ -96,3 +96,9 @@ def calculate_risk(region_id: int, db: Session = Depends(get_db)):
     if alerts_created:
         db.commit()
     return risk_score
+
+@app.get("/api/alerts/{region_id}", response_model=list[schemas.AlertResponse])
+def get_alerts(region_id: int, db: Session = Depends(get_db)):
+    # fetches all disaster alerts for a specific region descending order
+    alerts = db.query(models.Alert).filter(models.Alert.region_id == region_id).order_by(desc(models.Alert.created_at)).all()
+    return alerts
