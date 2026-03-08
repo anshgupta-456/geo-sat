@@ -55,27 +55,44 @@ def ingest_weather(weather: schemas.WeatherCreate, db: Session = Depends(get_db)
 
 @app.get("/api/risk/{region_id}", response_model=schemas.RiskResponse)
 def calculate_risk(region_id: int, db: Session = Depends(get_db)):
-    # calculate and return the risk score for the give region
+    # calculate the risk score and then automatically triger if risk score is higher
     latest_weather = db.query(models.WeatherObservation).filter(models.WeatherObservation.region_id == region_id).order_by(desc(models.WeatherObservation.timestamp)).first()
 
     if not latest_weather:
         raise HTTPException(status_code=404, detail="No weather data found for this region")
-    
     # algo
-    #heatwave score: if temp>35 max score is 100
-    heat_score = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp>35 else 10.0
-
-    # flood score: if rainfall is massive. Max score is 100
-    flood_score = min((latest_weather.rainfall/150)*100,100) if latest_weather.rainfall>50 else 10.0
+    heatrisk = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp >35 else 10.0
+    floodrisk = min((latest_weather.rainfall/150.0)*100, 100) if latest_weather.rainfall >50 else 10.0
 
     risk_score = models.RiskScore(
-        region_id=region_id,
-        flood_score=round(flood_score,2),
-        heatwave_score=round(heat_score,2),
-        landslide_score=0.0, #placeholder
-        earthquake_score=0.0 #placeholder
+        region_id = region_id,
+        flood_score = round(floodrisk, 2),
+        heatwave_score = round(heatrisk, 2),
+        landslide_score = 0.0,
+        earthquake_score = 0.0
     )
     db.add(risk_score)
     db.commit()
     db.refresh(risk_score)
+    alerts_created = False
+    if risk_score.flood_score >=80.0:
+        flood_alert = models.Alert(
+            region_id = region_id,
+            risk_type = "flood",
+            score = risk_score.flood_score,
+            message = f"Urgent: severe flood risk detected({risk_score.flood_score}%) in region {region_id}. Immediate action recommended!"
+        )
+        db.add(flood_alert)
+        alerts_created = True
+    if risk_score.heatwave_score >=80.0:
+        heatwave_alert = models.Alert(
+            region_id = region_id,
+            risk_type = "heatwave",
+            score = risk_score.heatwave_score,
+            message = f"Urgent: severe heatwave risk detected({risk_score.heatwave_score}%) in region {region_id}. Immediate action recommended!"
+        )
+        db.add(heatwave_alert)
+        alerts_created = True
+    if alerts_created:
+        db.commit()
     return risk_score
