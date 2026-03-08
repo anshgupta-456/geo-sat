@@ -4,7 +4,7 @@ from sqlalchemy import text, desc
 from database import get_db
 import models, schemas
 from fastapi import Path
-
+import ml_model
 app = FastAPI(title="Geo-Intelligent Disaster response API")
 
 @app.get("/")
@@ -55,15 +55,43 @@ def ingest_weather(weather: schemas.WeatherCreate, db: Session = Depends(get_db)
 
 @app.get("/api/risk/{region_id}", response_model=schemas.RiskResponse)
 def calculate_risk(region_id: int, db: Session = Depends(get_db)):
-    # calculate the risk score and then automatically triger if risk score is higher
-    latest_weather = db.query(models.WeatherObservation).filter(models.WeatherObservation.region_id == region_id).order_by(desc(models.WeatherObservation.timestamp)).first()
+    # 1. Fetch the last 14 weather records for this region, descending order
+    recent_weather = db.query(models.WeatherObservation)\
+        .filter(models.WeatherObservation.region_id == region_id)\
+        .order_by(desc(models.WeatherObservation.timestamp))\
+        .limit(14).all()
 
-    if not latest_weather:
+    if not recent_weather:
         raise HTTPException(status_code=404, detail="No weather data found for this region")
-    # algo
-    heatrisk = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp >35 else 10.0
-    floodrisk = min((latest_weather.rainfall/150.0)*100, 100) if latest_weather.rainfall >50 else 10.0
 
+    # 2. Reverse the list so it flows chronologically (oldest -> newest) for the LSTM
+    recent_weather.reverse()
+
+    # Pad if there are less than 14 days of data in the DB
+    while len(recent_weather) < 14:
+        recent_weather.insert(0, recent_weather[0])
+
+    # 3. Format the data for the ML wrapper, including the timestamp!
+    weather_history = [
+        {
+            "temp": w.temp, 
+            "rainfall": w.rainfall, 
+            "humidity": w.humidity,
+            "timestamp": w.timestamp
+        }
+        for w in recent_weather
+    ]
+
+    # ==========================================
+    # 4. RUN DEEP LEARNING INFERENCE
+    # ==========================================
+    floodrisk = ml_model.predict_flood_risk(weather_history)
+    
+    # We still use your basic formula for heatwaves using the latest day
+    latest_weather = recent_weather[-1]
+    heatrisk = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp > 35 else 10.0
+
+    # 5. Save the Risk Score
     risk_score = models.RiskScore(
         region_id = region_id,
         flood_score = round(floodrisk, 2),
@@ -74,8 +102,10 @@ def calculate_risk(region_id: int, db: Session = Depends(get_db)):
     db.add(risk_score)
     db.commit()
     db.refresh(risk_score)
+    
+    # 6. Generate Alerts
     alerts_created = False
-    if risk_score.flood_score >=80.0:
+    if risk_score.flood_score >= 80.0:
         flood_alert = models.Alert(
             region_id = region_id,
             risk_type = "flood",
@@ -84,7 +114,8 @@ def calculate_risk(region_id: int, db: Session = Depends(get_db)):
         )
         db.add(flood_alert)
         alerts_created = True
-    if risk_score.heatwave_score >=80.0:
+        
+    if risk_score.heatwave_score >= 80.0:
         heatwave_alert = models.Alert(
             region_id = region_id,
             risk_type = "heatwave",
@@ -93,8 +124,10 @@ def calculate_risk(region_id: int, db: Session = Depends(get_db)):
         )
         db.add(heatwave_alert)
         alerts_created = True
+        
     if alerts_created:
         db.commit()
+        
     return risk_score
 
 @app.get("/api/alerts/{region_id}", response_model=list[schemas.AlertResponse])
