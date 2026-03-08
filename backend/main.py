@@ -102,3 +102,14 @@ def get_alerts(region_id: int, db: Session = Depends(get_db)):
     # fetches all disaster alerts for a specific region descending order
     alerts = db.query(models.Alert).filter(models.Alert.region_id == region_id).order_by(desc(models.Alert.created_at)).all()
     return alerts
+
+@app.patch("/api/alerts/{alert_id}/send", response_model=schemas.AlertResponse)
+def mark_alert_sent(alert_id: int, db: Session = Depends(get_db)):
+    # mark the specific disaster alert as sent as previous it was shown false
+    alert = db.query(models.Alert).filter(models.Alert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.sent = True
+    db.commit()
+    db.refresh(alert)
+    return alert
