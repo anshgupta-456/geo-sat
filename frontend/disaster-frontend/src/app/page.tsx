@@ -34,12 +34,12 @@ export default function Home() {
   const [regions, setRegions] = useState([]);
   const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetch("http://localhost:8000/api/regions")
-      .then((res) => res.json())
-      .then((data) => setRegions(data))
-      .catch(err => console.error("FastAPI Error:", err));
-  }, []);
+useEffect(() => {
+  fetch("http://127.0.0.1:8000/api/regions") // Changed localhost to 127.0.0.1
+    .then((res) => res.json())
+    .then((data) => setRegions(data))
+    .catch(err => console.error("FastAPI Error:", err));
+}, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">

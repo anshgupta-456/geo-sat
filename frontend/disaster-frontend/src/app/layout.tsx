@@ -1,10 +1,9 @@
-
-import "@/app/globals.css";
+import "./globals.css"; // <-- This line activates Tailwind!
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Geo-Intelligent Disaster Dashboard",
-  description: "Real-time AI monitoring for floods and heatwaves",
+  title: "Disaster Dashboard",
+  description: "Geo-Intelligent AI System",
 };
 
 export default function RootLayout({
@@ -14,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="m-0 p-0 h-screen w-screen overflow-hidden bg-slate-50">
         {children}
       </body>
     </html>

@@ -4,13 +4,17 @@ from sqlalchemy import text, desc
 from database import get_db
 import models, schemas
 from fastapi import Path
+from sqlalchemy import func
 import ml_model
 app = FastAPI(title="Geo-Intelligent Disaster response API")
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Next.js default port
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,10 +52,31 @@ def create_region(region: schemas.RegionCreate, db:Session = Depends(get_db)):
     db.refresh(db_region)
     return db_region
 
+# @app.get("/api/regions")
+# def get_regions(db: Session = Depends(get_db)):
+#     regions = db.query(models.Region).all()
+#     return regions
 @app.get("/api/regions")
 def get_regions(db: Session = Depends(get_db)):
-    regions = db.query(models.Region).all()
-    return regions
+    # Use ST_X and ST_Y to extract coordinates from the centroid
+    regions = db.query(
+        models.Region.id,
+        models.Region.name,
+        models.Region.admin_level,
+        func.ST_Y(models.Region.centroid).label("latitude"),
+        func.ST_X(models.Region.centroid).label("longitude")
+    ).all()
+    
+    # Return a clean list of dictionaries
+    return [
+        {
+            "id": r.id, 
+            "name": r.name, 
+            "admin_level": r.admin_level, 
+            "latitude": r.latitude, 
+            "longitude": r.longitude
+        } for r in regions
+    ]
 @app.post("/api/weather", response_model=schemas.WeatherResponse)
 def ingest_weather(weather: schemas.WeatherCreate, db: Session = Depends(get_db)):
     db_weather = models.WeatherObservation(**weather.model_dump())

@@ -51,7 +51,7 @@ class PositionalEncoding(nn.Module):
 class HeatwaveTransformer(nn.Module):
     def __init__(self, input_size=5, d_model=64, nhead=4, num_layers=3, dim_feedforward=128, dropout=0.3):
         super(HeatwaveTransformer, self).__init__()
-        self.input_proj = nn.Linear(input_size, d_model)
+        self.input_projection = nn.Linear(input_size, d_model)
         self.pos_encoder = PositionalEncoding(d_model)
         encoder_layers = nn.TransformerEncoderLayer(
             d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
@@ -64,7 +64,7 @@ class HeatwaveTransformer(nn.Module):
             nn.Linear(32,1)
         )
     def forward(self, x):
-        x = self.input_proj(x)
+        x = self.input_projection(x)
         x = self.pos_encoder(x)
         x = self.transformer_encoder(x)
         return self.fc(x[:,-1,:])
