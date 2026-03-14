@@ -6,7 +6,15 @@ import models, schemas
 from fastapi import Path
 import ml_model
 app = FastAPI(title="Geo-Intelligent Disaster response API")
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Next.js default port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.get("/")
 def health_check(db: Session = Depends(get_db)):
     # root endpoint to check whether the api is connected or not to the database
