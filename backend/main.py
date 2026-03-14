@@ -88,9 +88,10 @@ def calculate_risk(region_id: int, db: Session = Depends(get_db)):
     floodrisk = ml_model.predict_flood_risk(weather_history)
     
     # We still use your basic formula for heatwaves using the latest day
-    latest_weather = recent_weather[-1]
-    heatrisk = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp > 35 else 10.0
-
+    # latest_weather = recent_weather[-1]
+    # heatrisk = min((latest_weather.temp/45.0)*100, 100) if latest_weather.temp > 35 else 10.0
+    # 🚀 NEW: The Transformer is now online!
+    heatrisk = ml_model.predict_heatwave_risk(weather_history)
     # 5. Save the Risk Score
     risk_score = models.RiskScore(
         region_id = region_id,
